@@ -1,0 +1,82 @@
+.message {
+  display: flex;
+  margin: 16px 0;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.user-message {
+  justify-content: flex-end;
+}
+
+.assistant-message {
+  justify-content: flex-start;
+}
+
+.message-content {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.user-content {
+  background: linear-gradient(135deg, #007AFF, #5AC8FA);
+  color: white;
+  border-bottom-right-radius: 6px;
+}
+
+.assistant-content {
+  background: var(--message-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-bottom-left-radius: 6px;
+}
+
+.message-text {
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.message-timestamp {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.assistant-content .message-timestamp {
+  text-align: left;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .message-content {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
