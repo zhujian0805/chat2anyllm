@@ -1,0 +1,11 @@
+FROM redis:alpine3.22
+
+# Copy Redis configuration
+COPY redis.conf /usr/local/etc/redis/redis.conf
+
+
+# Set permissions for Redis data directory
+RUN mkdir -p /data && chown redis:redis /data
+
+# Start Redis with configuration
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]

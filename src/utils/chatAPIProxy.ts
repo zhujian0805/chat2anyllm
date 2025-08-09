@@ -10,18 +10,17 @@ export class ChatAPI {
 
   async getModels(): Promise<ModelInfo[]> {
     try {
-      console.log('Fetching models from:', `${this.config.endpoint}/v1/model/info`);
-      const response = await axios.get(`${this.config.endpoint}/v1/model/info`, {
+      console.log('Fetching models from backend proxy:', `${this.config.endpoint}/api/models`);
+      const response = await axios.get(`${this.config.endpoint}/api/models`, {
         headers: {
-          'accept': 'application/json',
-          'x-litellm-api-key': this.config.apiKey
+          'accept': 'application/json'
         },
         timeout: 5000 // 5 second timeout
       });
 
       console.log('Models response:', response.data);
 
-      // Handle the LiteLLM response format
+      // Handle the response format
       const data = response.data;
       
       // Check if it's the LiteLLM format with a 'data' array
@@ -107,13 +106,14 @@ export class ChatAPI {
         console.error('Response status:', error.response?.status);
         console.error('Response data:', error.response?.data);
         
-        // If it's a connection error, return fallback models
-        if (error.code === 'ECONNREFUSED' || error.message.includes('timeout')) {
-          console.log('Connection failed, using fallback models');
-          return this.getFallbackModels();
-        }
+        // Treat any network/HTTP failure as a signal to return fallback models instead of throwing.
+        // This avoids surfacing an error banner in the UI when LiteLLM is simply unavailable.
+        console.log('Model fetch failed (network/HTTP). Using fallback models.');
+        return this.getFallbackModels();
       }
-      throw new Error('Failed to fetch models from LiteLLM');
+      // Non-axios error (very rare) – still return fallback models.
+      console.log('Unknown error type while fetching models. Using fallback models.');
+      return this.getFallbackModels();
     }
   }
 
@@ -135,20 +135,17 @@ export class ChatAPI {
     onError: (error: Error) => void
   ): Promise<void> {
     try {
-      const response = await fetch(`${this.config.endpoint}/v1/chat/completions`, {
+      const response = await fetch(`${this.config.endpoint}/api/chat/completions/stream`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'x-litellm-api-key': this.config.apiKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: model,
           messages: messages.map(msg => ({
             role: msg.role,
             content: msg.content
-          })),
-          stream: true
+          }))
         })
       });
 
@@ -217,7 +214,7 @@ export class ChatAPI {
     onComplete: () => void
   ): Promise<void> {
     const lastMessage = messages[messages.length - 1];
-    let mockResponse = `I'm a mock response since the LiteLLM server is not available. You asked: "${lastMessage.content}"`;
+    let mockResponse = `I'm a mock response since the backend proxy is not available. You asked: "${lastMessage.content}"`;
     
     // Add some mock code if the user asks for code
     if (lastMessage.content.toLowerCase().includes('code') || lastMessage.content.toLowerCase().includes('function') || lastMessage.content.toLowerCase().includes('python')) {
@@ -237,37 +234,35 @@ export class ChatAPI {
   // Fallback non-streaming method
   async sendMessage(messages: Message[], model: string): Promise<string> {
     try {
-      const response = await axios.post(`${this.config.endpoint}/v1/chat/completions`, {
+      const response = await axios.post(`${this.config.endpoint}/api/chat/completions`, {
         model: model,
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content
-        })),
-        stream: false
-      }, {
+        })
+      )}, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'x-litellm-api-key': this.config.apiKey
+          'Content-Type': 'application/json'
         }
       });
 
       return response.data.choices[0].message.content;
     } catch (error) {
       console.error('Error sending message:', error);
-      throw new Error('Failed to send message to LiteLLM');
+      throw new Error('Failed to send message to backend proxy');
     }
   }
 }
 
 // Import environment variable utilities
-import { getEnvVar } from './env';
+import { getBackendEndpoint, getLiteLLMModel, getApiKey } from './env';
 
 export const createChatAPI = (): ChatAPI => {
   const config: ChatConfig = {
-    endpoint: getEnvVar('VITE_LITELLM_ENDPOINT', 'http://localhost:4141'),
-    model: getEnvVar('VITE_LITELLM_MODEL', 'gpt-3.5-turbo'),
-    apiKey: getEnvVar('VITE_API_KEY', '')
+    // Changed from REACT_APP_LITELLM_ENDPOINT to point to our backend proxy
+    endpoint: getBackendEndpoint(),
+    model: getLiteLLMModel(),
+    apiKey: getApiKey()
   };
 
   return new ChatAPI(config);

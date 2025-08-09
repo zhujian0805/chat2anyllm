@@ -17,6 +17,20 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
   isLoading,
   error
 }) => {
+  // Sort models by provider, then by model name
+  const sortedModels = [...models].sort((a, b) => {
+    const providerA = a.litellm_provider || '';
+    const providerB = b.litellm_provider || '';
+    
+    // First sort by provider
+    if (providerA !== providerB) {
+      return providerA.localeCompare(providerB);
+    }
+    
+    // If providers are the same, sort by model name
+    return a.id.localeCompare(b.id);
+  });
+
   return (
     <div className="model-selector-container">
       <label htmlFor="model-select" className="model-label">
@@ -33,10 +47,10 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
           <option value={selectedModel}>Loading models...</option>
         ) : error ? (
           <option value={selectedModel}>{selectedModel} (using fallback)</option>
-        ) : models.length === 0 ? (
+        ) : sortedModels.length === 0 ? (
           <option value={selectedModel}>{selectedModel} (default)</option>
         ) : (
-          models.map((model) => (
+          sortedModels.map((model) => (
             <option key={model.id} value={model.id}>
               {model.id}
               {model.litellm_provider && ` (${model.litellm_provider})`}

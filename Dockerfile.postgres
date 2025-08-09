@@ -1,0 +1,13 @@
+FROM postgres:16.10
+
+# Set environment variables
+ENV POSTGRES_DB=litellm
+ENV POSTGRES_USER=litellm
+ENV POSTGRES_PASSWORD=litellm
+
+# Copy initialization script
+COPY scripts/init-litellm.sql /docker-entrypoint-initdb.d/01-init-litellm.sql
+COPY scripts/init-chat2anyllm.sql /docker-entrypoint-initdb.d/02-init-chat2anyllm.sql
+
+# Fix permissions and make sure the scripts are readable
+RUN chmod 644 /docker-entrypoint-initdb.d/*.sql

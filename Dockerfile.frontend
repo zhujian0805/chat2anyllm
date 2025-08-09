@@ -1,0 +1,38 @@
+FROM node:20-bullseye-slim
+
+# Avoid prompts from apt and install bash (manage script uses bash)
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN export http_proxy="$PROXY" https_proxy="$PROXY" HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY" \ 
+    && apt-get update \
+    && apt-get install -y --no-install-recommends bash ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# ESM/node resolution tweak if needed
+ENV NODE_OPTIONS="--experimental-specifier-resolution=node"
+
+WORKDIR /app
+
+# Copy root package files and install deps (use proxy temporarily)
+COPY package*.json ./
+RUN set -e; \
+    export http_proxy="$PROXY" https_proxy="$PROXY" HTTP_PROXY="$PROXY" HTTPS_PROXY="$PROXY"; \
+    npm config set proxy "$PROXY"; \
+    npm config set https-proxy "$PROXY"; \
+    npm install --legacy-peer-deps; \
+    npm install -g serve; \
+    npm config delete proxy; \
+    npm config delete https-proxy;
+
+# Copy application source
+COPY . .
+
+# Ensure scripts are executable
+RUN chmod +x /app/manage-app.sh
+
+# Build frontend
+RUN /app/manage-app.sh build
+
+EXPOSE 3000
+
+CMD ["/app/manage-app.sh", "start-frontend-fg"]

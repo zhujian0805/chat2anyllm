@@ -1,0 +1,11 @@
+FROM nginx:1.27-alpine
+
+# Copy custom nginx configuration
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Directory where certs will be mounted at runtime
+RUN mkdir -p /etc/nginx/certs && chown -R nginx:nginx /etc/nginx/certs
+
+EXPOSE 80 443
+
+# Use default nginx entrypoint/cmd

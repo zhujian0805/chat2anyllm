@@ -1,0 +1,40 @@
+FROM node:20-bullseye-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NODE_OPTIONS="--experimental-specifier-resolution=node"
+
+WORKDIR /app
+
+# Copy package manifests and install root deps (frontend build deps) with temporary proxy
+COPY package*.json ./
+RUN set -e; \
+	npm config set proxy "$PROXY"; \
+	npm config set https-proxy "$PROXY"; \
+	npm install --legacy-peer-deps; \
+	npm config delete proxy; \
+	npm config delete https-proxy;
+
+# Backend dependencies
+COPY backend/package*.json ./backend/
+WORKDIR /app/backend
+RUN set -e; \
+	npm config set proxy "$PROXY"; \
+	npm config set https-proxy "$PROXY"; \
+	npm install --legacy-peer-deps; \
+	npm config delete proxy; \
+	npm config delete https-proxy;
+
+# Copy full source
+WORKDIR /app
+COPY . .
+
+# Ensure scripts executable
+RUN chmod +x /app/manage-app.sh
+
+# Build frontend once (backend serves API only)
+RUN /app/manage-app.sh build
+
+# Expose backend port
+EXPOSE 3001
+
+CMD ["/app/manage-app.sh", "start-backend-fg"]

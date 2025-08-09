@@ -10,6 +10,7 @@
 
 # production
 /build
+certs/
 
 # misc
 .DS_Store
@@ -21,3 +22,14 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.env
+node_modules
+build
+*node_modules*
+frontend.log
+backend.log
+.app-pids
+yarn.lock
+config.yaml
+.claude
+.specify
