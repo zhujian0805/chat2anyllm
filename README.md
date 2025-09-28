@@ -9,11 +9,15 @@ For a detailed explanation of the architecture and design decisions, please see 
 - 🎨 **Modern Apple-style UI** - Clean, minimalist design with smooth animations
 - 🌙 **Dark/Light Theme** - Toggle between themes with persistent preferences
 - 💬 **Real-time Chat** - Send messages to any LiteLLM-compatible endpoint
-- ✨ **Slash Commands** - Use `/clear`, `/models`, and `/model <name>` for quick actions.
+- ✨ **Slash Commands** - Use `/clear`, `/models`, `/model <name>`, `/roles`, `/role <name>`, and `/clear_role` for quick actions.
 - 🎨 **Code Highlighting** - Automatic syntax highlighting for code blocks in responses
 - 📱 **Responsive Design** - Works on desktop and mobile devices
 - ⚡ **Fast & Lightweight** - Built with modern React and TypeScript
 - 🔒 **Secure Backend Proxy** - Node.js backend proxy for secure API communication
+- 🗂️ **Session Management** - Persistent chat sessions stored in PostgreSQL
+- 👥 **Roles System** - Create and apply reusable role instructions to guide LLM behavior
+- 📋 **Plan Mode** - Use two models: one for planning and one for execution
+- 🔄 **Model Selection** - Choose from available LiteLLM models for each conversation
 
 ## Architecture
 
@@ -51,6 +55,8 @@ graph TD
 
     Frontend -- "HTTP API (/api/...)" --> Backend
     Backend -- "LiteLLM API (/v1/...)" --> LiteLLM
+    Backend -- "Reads/Writes for Sessions" --> Postgres
+    Backend -- "Reads/Writes for Roles" --> Postgres
 
     LiteLLM -- "Reads/Writes" --> Redis
     LiteLLM -- "Reads/Writes" --> Postgres
@@ -118,6 +124,7 @@ JWT_EXPIRES_IN=24h
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
+SLACK_SIGNING_SECRET=your-slack-signing-secret-here
 ```
 
 ### LiteLLM Setup
@@ -213,6 +220,42 @@ docker-compose up -d --build chat2anyllm-proxy
 Then visit: https://localhost (accept the self-signed cert warning if not trusted). The frontend will call the backend at the same origin, avoiding mixed-content issues.
 
 If you later obtain a real certificate (e.g., via Let's Encrypt), replace the files in `certs/` with the new `.crt` and `.key` names expected by the compose setup.
+
+## New Features
+
+### Roles System
+The Roles feature allows you to create reusable role instruction prompts (system prompts) that can be injected when chatting with any LLM model. Roles are stored in PostgreSQL and can be applied to conversations to guide the LLM's behavior.
+
+To use roles:
+1. Click the "Roles" section in the left sidebar
+2. Click "+New" to create a role by entering a name and its instructions
+3. Click on a role to make it active
+4. When a role is active, its instructions are prepended to your messages
+5. Click the active role again to clear it
+
+Slash commands for roles:
+- `/roles` - List all available roles
+- `/role <name>` - Select a role by name
+- `/clear_role` - Clear the active role
+
+### Plan Mode
+Plan Mode is a unique feature that uses two models - one for planning and one for execution. This allows for more structured and thoughtful responses.
+
+To enable Plan Mode:
+1. Use the slash command: `/model:plan-mode <planning_model> <answering_model>`
+2. Example: `/model:plan-mode gpt-4 claude-3`
+3. To disable: `/model:plan-mode-off`
+
+When Plan Mode is enabled:
+1. The first model creates a plan as a numbered checklist
+2. The second model executes the plan and provides a concrete implementation
+
+### Session Management
+The application now supports persistent chat sessions stored in PostgreSQL. You can:
+- Create new sessions
+- Switch between existing sessions
+- Delete sessions
+- Sessions are automatically titled based on the first message
 
 ## Available Scripts
 
