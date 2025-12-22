@@ -4,12 +4,15 @@
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # testing
 /coverage
+.nyc_output
 
 # production
 /build
+/dist
 certs/
 
 # misc
@@ -19,18 +22,47 @@ certs/
 .env.test.local
 .env.production.local
 
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+
+# environment files (should be created manually per deployment)
 .env
-node_modules
-build
-*node_modules*
-frontend.log
-backend.log
+.env.*
+
+# Runtime data
 .app-pids
+.pid
+.pids
+*.pid
+*.pids
+
+# Lock files
 yarn.lock
+package-lock.json
+
+# Configuration files that shouldn't be versioned
 config.yaml
+config.json
+*.local
+*.development
+*.production
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code and other AI tools
 .claude
+.gemini/
 .specify
 .serena
+
+# Build artifacts
+*.tgz
+*.zip
