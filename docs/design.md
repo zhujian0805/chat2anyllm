@@ -209,7 +209,7 @@ How it works:
 
 - Frontend now persists to Postgres via backend; `localStorage` history is replaced by session storage in DB.
 - Backend sets CORS, timeouts, and pipes LiteLLM's SSE stream to the client.
-- LiteLLM models and headers are configured in `config.yaml`; Redis and Postgres are declared in `docker-compose.yml`.
+- LiteLLM models and headers are configured in `config.yaml`; the LiteLLM stack runs from `docker-compose.yml`, while the Chat2AnyLLM app stack runs from `chat2anyllm-app/docker-compose.yml`.
 - The `manage-app.sh` script simplifies local development by providing commands to build, start, stop, and manage the application services.
 - Dockerfiles for the frontend and backend are optimized using the `node:20-bullseye-slim` base image for smaller and more efficient builds.
 - Environment variables for all services are now managed through separate `.env.*` files for easier configuration management.

@@ -51,82 +51,31 @@ services:
     networks:
       - litellm-network
 
-  # Chat2AnyLLM frontend
-  chat2anyllm-frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: chat2anyllm-frontend
-    env_file:
-      - .env.chat2anyllm-frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - chat2anyllm-backend
-    networks:
-      - litellm-network
-
-  # Nginx reverse proxy for frontend+backend+litellm (HTTPS termination)
-  chat2anyllm-proxy:
+  # Nginx reverse proxy for HTTPS termination
+  # Note: This proxy expects app services to be accessible via host networking
+  # Start app stack separately with: docker-compose -f chat2anyllm-app/docker-compose.yml up -d
+  nginx:
     build:
       context: .
       dockerfile: Dockerfile.proxy
-    container_name: chat2anyllm-proxy
+    container_name: litellm-nginx
     depends_on:
-      - chat2anyllm-frontend
-      - chat2anyllm-backend
       - litellm
     ports:
       - "80:80"
       - "443:443"
-      - "4142:4142"  # Expose new dedicated TLS entrypoint for litellm via nginx on host 4142
+      - "4142:4142"  # Dedicated TLS entrypoint for litellm
     volumes:
       - ./certs:/etc/nginx/certs:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    networks:
-      - litellm-network
-
-  # Chat2AnyLLM backend
-  chat2anyllm-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: chat2anyllm-backend
-    env_file:
-      - .env.chat2anyllm-backend
-    environment:
-      - DATABASE_URL=postgresql://litellm:litellm@postgres:5432/chat2anyllm
-    ports:
-      - "3001:3001"
-    depends_on:
-      litellm:
-        condition: service_started
-      postgres:
-        condition: service_healthy
-    networks:
-      - litellm-network
-
-  # Open WebUI frontend
-  openwebui:
-    image: ghcr.nju.edu.cn/open-webui/open-webui:latest
-    container_name: open-webui
-    ports:
-      - "8000:8080"
-    volumes:
-      - open-webui:/app/backend/data
-    networks:
-      - litellm-network
-    depends_on:
-      litellm:
-        condition: service_started
-      postgres:
-        condition: service_healthy
+      - ./nginx/default-proxy.conf:/etc/nginx/conf.d/default.conf:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - litellm-network
+
 
 volumes:
   postgres_data:
-  open-webui:
 
 networks:
   litellm-network:

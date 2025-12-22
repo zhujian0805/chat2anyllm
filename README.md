@@ -132,8 +132,11 @@ SLACK_SIGNING_SECRET=your-slack-signing-secret-here
 If you don't have LiteLLM running, you can set it up using Docker Compose:
 
 ```bash
-# Start all services including LiteLLM, PostgreSQL, and Redis
+# Start LiteLLM stack (PostgreSQL, Redis, LiteLLM, optional Nginx proxy)
 docker-compose up -d
+
+# Optional: Start with HTTPS proxy
+docker-compose up -d --build nginx
 ```
 
 The LiteLLM configuration is stored in `config.yaml` and the database initialization script is in `scripts/init-litellm.sql`.
@@ -181,45 +184,33 @@ For more details, see [BUILD_SCRIPT_README.md](BUILD_SCRIPT_README.md).
 For containerized deployment, use Docker Compose:
 
 ```bash
-# Build and start all services
+# Start LiteLLM stack (root)
 docker-compose up -d
 
-# View logs
-docker-compose logs -f
+# Start Chat2AnyLLM app stack (frontend/backend/openwebui + app postgres)
+docker-compose -f chat2anyllm-app/docker-compose.yml up -d --build
 
-# Stop all services
-docker-compose down
+# Optional: Start HTTPS proxy (exposes app + litellm via https)
+docker-compose up -d --build nginx
 ```
 
 Services will be available at:
-- Frontend: http://localhost:3000
-- Backend: http://localhost:3001
 - LiteLLM Proxy: http://localhost:4141
+- Chat2AnyLLM Frontend: http://localhost:3000
+- Chat2AnyLLM Backend: http://localhost:3001
+- Open WebUI (optional): http://localhost:8000
 
-### HTTPS Reverse Proxy (Nginx)
+With HTTPS proxy enabled:
+- Frontend + Backend: https://localhost/
+- LiteLLM via proxy: https://localhost/litellm/
+- LiteLLM dedicated TLS: https://localhost:4142/
 
-An optional Nginx reverse proxy container (`chat2anyllm-proxy`) is included to provide unified HTTPS access and route traffic:
+Note: the app stack talks to LiteLLM via `http://host.docker.internal:4141` by default; override with `LITELLM_ENDPOINT=...` when running compose if needed.
 
-- https://localhost/ -> Frontend (chat UI)
-- https://localhost/api/... -> Backend API
-
-Self-signed certificates can be generated locally via:
-
+Generate self-signed certs for HTTPS proxy:
 ```bash
 scripts/generate-self-signed-cert.sh
 ```
-
-This creates `certs/chat2anyllm.crt` and `certs/chat2anyllm.key` (ignored by git). The docker-compose file mounts them read-only into the Nginx container. To trust the cert locally, import it into your OS/browser trust store (instructions printed by the script).
-
-Start all services (including proxy):
-
-```bash
-docker-compose up -d --build chat2anyllm-proxy
-```
-
-Then visit: https://localhost (accept the self-signed cert warning if not trusted). The frontend will call the backend at the same origin, avoiding mixed-content issues.
-
-If you later obtain a real certificate (e.g., via Let's Encrypt), replace the files in `certs/` with the new `.crt` and `.key` names expected by the compose setup.
 
 ## New Features
 
