@@ -33,7 +33,7 @@ services:
 
   # LiteLLM proxy server (now exposed on host 4141)
   litellm:
-    image: ${LITELLM_IMAGE}
+    image: "litellm/litellm:v1.80.11-nightly"
     container_name: litellm-proxy
     ports:
       - "4141:4141"  # Expose LiteLLM directly on host for local access
@@ -66,8 +66,10 @@ services:
       - "443:443"
       - "4142:4142"  # Dedicated TLS entrypoint for litellm
     volumes:
-      - ./certs:/etc/nginx/certs:ro
+      - ${CERT_DIR:-../certs}:/etc/nginx/certs:ro
       - ./nginx/default-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    env_file:
+      - .env.nginx
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
